@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="architecture" xmlns="http://www.w3.org/2000/svg" width="1500" height="836" viewBox="0 0 1500 836" data-deployment="local" role="img" aria-labelledby="diagram-title diagram-description">
+        <title id="diagram-title">两层 KV 存储：本地 SSD 经 GDS 预读至 HBM</title>
+        <desc id="diagram-description">SSD 容量层与 HBM 工作层组成两层 KV 存储。应用预告和队列前瞻驱动调度，调度器分配 HBM 预读空间并管理 NVMe 在途请求。本地 GDS 路径将历史 KV 预读至 HBM，就绪后转为活跃工作集并启动会话。活跃 KV 在生成期间常驻 HBM。新 KV 异步写回 SSD，写回完成后回收或复用对应显存。</desc>
+        <defs>
+          <marker id="read-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1 L9 5 L1 9Z" fill="#326de0"/></marker>
+          <marker id="write-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1 L9 5 L1 9Z" fill="#087f72"/></marker>
+          <marker id="control-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M1 1 L9 5 L1 9Z" fill="#8699aa"/></marker>
+          <style>
+            text { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #173247; }
+            .heading { font-size: 22px; font-weight: 700; }
+            .label { font-size: 16px; font-weight: 650; }
+            .small { font-size: 14px; fill: #5e7285; }
+            .tiny { font-size: 12px; fill: #5e7285; }
+            .white { fill: #fff; }
+            .read-link { fill: none; stroke: #326de0; stroke-width: 3; stroke-linejoin: round; marker-end: url(#read-arrow); }
+            .write-link { fill: none; stroke: #087f72; stroke-width: 3; stroke-linejoin: round; marker-end: url(#write-arrow); }
+            .control-link { fill: none; stroke: #8699aa; stroke-width: 1.7; stroke-dasharray: 5 5; marker-end: url(#control-arrow); }
+            svg[data-deployment="local"] .remote-view, svg[data-deployment="remote"] .local-view { display: none; }
+          </style>
+        </defs>
+        <rect width="1500" height="836" fill="#fff"/>
+        <text x="32" y="39" font-size="15" font-weight="700">SSD 容量层 + HBM 工作层</text>
+        <g class="local-view"><text x="1468" y="39" text-anchor="end" class="tiny">阶段 1 / 本地直读验证 · 同一服务器</text></g>
+        
+
+        <rect x="32" y="63" width="1436" height="125" rx="14" fill="#f6f8fb" stroke="#dce5ec"/>
+        <text x="54" y="88" class="tiny" font-weight="700">控制面 / 会话调度与资源管理</text>
+        <rect x="54" y="102" width="322" height="66" rx="9" fill="#fff" stroke="#dce5ec"/>
+        <text x="72" y="129" class="label">应用预告 / 已排队任务</text>
+        <text x="72" y="152" class="small">会话 ID、预计到达时间或前瞻窗口</text>
+        <path class="control-link" d="M380 135 H424"/>
+        <rect x="430" y="102" width="490" height="66" rx="9" fill="#173247"/>
+        <text x="450" y="129" class="label white">推理感知调度器</text>
+        <text x="450" y="152" class="small" style="fill:#d2e1ed">HBM 预读配额 · I/O 截止时间 · 在途与写回限流</text>
+        <path class="control-link" d="M924 135 H968"/>
+        <rect x="974" y="102" width="472" height="66" rx="9" fill="#fff" stroke="#c4ded6"/>
+        <text x="994" y="129" class="label">会话启动：KV 就绪 + HBM 空间分配</text>
+        <text x="994" y="152" class="small">完成数据准备后，将会话交给 GPU 执行</text>
+        <path class="control-link" d="M554 188 V214 H222 V234"/>
+        <path class="control-link" d="M1210 188 V234"/>
+        <text x="574" y="218" class="tiny">CPU / DPU 负责索引、队列、内存注册与完成通知</text>
+
+        <rect x="32" y="236" width="380" height="458" rx="16" fill="#f3f7ff" stroke="#cddcf2"/>
+        <rect x="54" y="258" width="30" height="30" rx="8" fill="#dce9ff"/>
+        <text x="69" y="279" text-anchor="middle" font-size="16" font-weight="700" style="fill:#326de0">1</text>
+        <text x="98" y="281" class="heading">SSD 容量层</text>
+        <text x="54" y="309" class="small">非活跃会话 KV / 可复用历史 KV</text>
+        <rect x="54" y="332" width="336" height="98" rx="11" fill="#fff" stroke="#bfd0eb"/>
+        <text x="74" y="358" class="label">NVMe SSD 池</text>
+        <rect x="74" y="375" width="89" height="33" rx="5" fill="#eaf1fc"/>
+        <rect x="177" y="375" width="89" height="33" rx="5" fill="#eaf1fc"/>
+        <rect x="280" y="375" width="89" height="33" rx="5" fill="#eaf1fc"/>
+        <text x="118" y="397" text-anchor="middle" class="tiny">SSD 0</text>
+        <text x="221" y="397" text-anchor="middle" class="tiny">SSD 1</text>
+        <text x="324" y="397" text-anchor="middle" class="tiny">SSD N</text>
+        <rect x="54" y="451" width="336" height="94" rx="10" fill="#fff" stroke="#d4e0f0"/>
+        <text x="74" y="478" class="label">减少源头抖动</text>
+        <text x="74" y="502" class="small">FDP 或 ZNS：按生命周期组织数据</text>
+        <text x="74" y="525" class="tiny">优化数据放置，减少有效页搬迁</text>
+        <rect x="54" y="565" width="336" height="99" rx="10" fill="#fff" stroke="#b8c9dd" stroke-dasharray="5 4"/>
+        <text x="74" y="592" class="label">扩展策略：独立 SSD 副本</text>
+        <text x="74" y="616" class="small">慢读时补读另一份，采用先完成的数据</text>
+        <text x="74" y="642" class="tiny">副本一致性管理与读取流量调度</text>
+
+        <rect x="444" y="236" width="486" height="458" rx="16" fill="#fafbfc" stroke="#dce5ec"/>
+        <text x="466" y="280" class="heading">传输与流控</text>
+        <text x="466" y="309" class="small">连接 SSD 容量层与 HBM 工作层</text>
+        <g class="local-view">
+          <rect x="466" y="332" width="442" height="98" rx="11" fill="#fff" stroke="#c5d3e3"/>
+          <text x="687" y="359" text-anchor="middle" class="label">PCIe / GPUDirect Storage</text>
+          <text x="687" y="385" text-anchor="middle" class="small">直接路径：NVMe DMA → GPU HBM</text>
+          <text x="687" y="409" text-anchor="middle" class="tiny">CPU 发起与管理 I/O，DMA 搬运 KV 负载</text>
+          <rect x="466" y="451" width="442" height="119" rx="10" fill="#fff9ef" stroke="#e4c89e" stroke-dasharray="5 4"/>
+          <text x="486" y="479" class="label" style="fill:#925a14">直接传输配置</text>
+          <text x="486" y="505" class="small">PCIe 拓扑、驱动与文件系统配置</text>
+          <text x="486" y="530" class="small">GPU 内存注册、缓冲区管理与 I/O 对齐</text>
+          <text x="486" y="553" class="tiny">跟踪 DMA 路径、传输带宽与完成延迟</text>
+        </g>
+        
+        <rect x="466" y="591" width="442" height="73" rx="10" fill="#eef2f6"/>
+        <text x="486" y="619" class="label">统一流控：协调预读与后台写回</text>
+        <text x="486" y="644" class="small">前台截止时间优先；预取与写回均设置在途配额</text>
+
+        <rect x="962" y="236" width="506" height="458" rx="16" fill="#f0f8f4" stroke="#c4dfd5"/>
+        <rect x="984" y="258" width="30" height="30" rx="8" fill="#d5eee2"/>
+        <text x="999" y="279" text-anchor="middle" font-size="16" font-weight="700" style="fill:#087f72">2</text>
+        <text x="1028" y="281" class="heading">GPU HBM 工作层</text>
+        <text x="984" y="309" class="small">预读区与活跃区共享同一份 HBM 容量预算</text>
+        <rect x="984" y="332" width="212" height="126" rx="11" fill="#fff" stroke="#6cae9b" stroke-width="1.5"/>
+        <text x="1004" y="360" class="label">预读 KV / 就绪队列</text>
+        <text x="1004" y="389" class="small">即将启动的会话</text>
+        <text x="1004" y="414" class="small">数据提前从 SSD 到位</text>
+        <text x="1004" y="438" class="tiny">与活跃 KV 共享 HBM 空间</text>
+        <rect x="1220" y="332" width="224" height="126" rx="11" fill="#087f72"/>
+        <text x="1240" y="360" class="label white">活跃 KV / 工作集</text>
+        <text x="1240" y="389" class="small" style="fill:#e0f5ed">生成期间常驻 HBM</text>
+        <text x="1240" y="414" class="small" style="fill:#e0f5ed">历史 KV + 新生成 KV</text>
+        <text x="1240" y="438" class="tiny" style="fill:#e0f5ed">逐 token 复用本地 KV</text>
+        <path class="write-link" d="M1197 380 H1217"/>
+        <text x="984" y="489" class="tiny">就绪后切换为活跃归属，复用原有 KV 数据</text>
+        <path class="write-link" d="M1332 460 V505"/>
+        <rect x="1220" y="509" width="224" height="63" rx="10" fill="#fff" stroke="#b9d9ce"/>
+        <text x="1332" y="536" text-anchor="middle" class="label">GPU 计算单元</text>
+        <text x="1332" y="559" text-anchor="middle" class="tiny">从本地 HBM 读取 attention KV</text>
+        <rect x="984" y="509" width="212" height="63" rx="10" fill="#e0f0e8"/>
+        <text x="1000" y="536" class="tiny" font-weight="700">权重 / 激活 / KV 空间分配</text>
+        <text x="1000" y="559" class="tiny">统一管理 GPU 显存预算</text>
+        <rect x="984" y="591" width="460" height="73" rx="10" fill="#fff" stroke="#c4dfd5"/>
+        <text x="1004" y="619" class="label">新 KV 保留至异步写回完成</text>
+        <text x="1004" y="644" class="small">写回确认后，回收或复用对应显存</text>
+
+        <g class="read-flow">
+          <path class="read-link" d="M391 381 H463"/>
+          <path class="read-link" d="M910 381 H981"/>
+          <text x="427" y="366" text-anchor="middle" class="tiny" style="fill:#326de0">预读</text>
+          <text x="945" y="366" text-anchor="middle" class="tiny" style="fill:#326de0">入 HBM</text>
+        </g>
+        <g class="write-flow">
+          <path class="write-link" d="M1332 695 V729 H222 V697"/>
+          <rect x="555" y="713" width="443" height="32" rx="16" fill="#e7f4ed"/>
+          <text x="777" y="734" text-anchor="middle" font-size="14" font-weight="600" style="fill:#087f72">后台异步写回 · 经所选传输路径反向传输 · 限流</text>
+        </g>
+        <text x="750" y="770" text-anchor="middle" class="small">执行流程：提前装入工作集 → KV 就绪后启动会话 → HBM 内逐 token 复用 → 后台异步写回</text>
+        <line x1="32" y1="789" x2="1468" y2="789" stroke="#e0e7ed"/>
+        <path d="M34 813 H62" class="read-link"/><text x="74" y="818" class="tiny">SSD → HBM 预读</text>
+        <path d="M246 813 H274" class="write-link"/><text x="286" y="818" class="tiny">HBM 数据流 / 后台写回</text>
+        <path d="M504 813 H532" class="control-link"/><text x="544" y="818" class="tiny">调度与控制信号</text>
+        <rect x="725" y="805" width="28" height="16" rx="3" fill="#fff9ef" stroke="#c6a36e" stroke-dasharray="4 3"/><text x="765" y="818" class="tiny">配置管理 / 扩展策略</text>
+        <text x="1468" y="818" text-anchor="end" font-size="12" font-weight="700" style="fill:#087f72">设计目标：降低等待、平滑数据供给</text>
+      </svg>

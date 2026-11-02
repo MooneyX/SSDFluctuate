@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title description">
+  <title id="title">两层 KV 存储：推理感知预取与写回</title>
+  <desc id="description">SSD 容量层与 GPU HBM 工作层组成两层 KV 存储。推理 CPU 通过推理侧 RNIC、交换网络、存储侧 RNIC 发送 KV 查找与预取请求及排队预测。存储 CPU 查询 DRAM 索引，将命中任务切分，按请求剩余裕量调度下一小块。SSD 经临时 DRAM 缓冲、两端 RNIC 和 GPUDirect RDMA 将 KV 预取至 HBM。写回时，推理侧附带会话、请求、共享性、历史回复间隔和保留策略等元数据。存储 CPU 分别预测复用与淘汰时间，按预期寿命分类并选择 FDP 放置类别或 ZNS 区域。新 KV 从 HBM 经 RNIC、网络和存储侧 DRAM 缓冲写入 SSD。对象写入完成后发布可读索引，经控制通路返回确认，推理侧依据引用状态管理 HBM 回收。</desc>
+  <defs>
+    <marker id="data-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1 L9 5 L1 9Z" fill="#326de0" /></marker>
+    <marker id="control-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1 L9 5 L1 9Z" fill="#7b8fa1" /></marker>
+    <marker id="ready-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M1 1 L9 5 L1 9Z" fill="#087f72" /></marker>
+    <style>
+      text { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #173247; }
+      .title { font-size: 32px; font-weight: 700; }
+      .heading { font-size: 24px; font-weight: 700; }
+      .label { font-size: 21px; font-weight: 650; }
+      .body { font-size: 18px; }
+      .small { font-size: 16px; fill: #5e7285; }
+      .tiny { font-size: 14px; fill: #5e7285; }
+      .muted { fill: #5e7285; }
+      .white { fill: #fff; }
+      .blue { fill: #326de0; }
+      .teal { fill: #087f72; }
+      .control { fill: none; stroke: #7b8fa1; stroke-width: 2; stroke-dasharray: 7 5; stroke-linejoin: round; marker-end: url(#control-arrow); }
+      .data { fill: none; stroke: #326de0; stroke-width: 3.5; stroke-linejoin: round; marker-end: url(#data-arrow); }
+      .ready { fill: none; stroke: #087f72; stroke-width: 3; marker-end: url(#ready-arrow); }
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="#fff" />
+  <text x="40" y="60" class="title">两层 KV 存储：推理感知预取与写回</text>
+  <text x="40" y="96" class="body muted">预取按剩余裕量调度，写回按预期寿命分组；CPU 管理 I/O，DMA 搬运数据</text>
+  <rect x="1540" y="38" width="340" height="42" rx="10" fill="#eaf6f1" stroke="#c4dfd5" />
+  <text x="1710" y="66" text-anchor="middle" class="body teal" font-weight="650">远端存储 · CPU + RNIC 方案</text>
+
+  <rect x="40" y="136" width="1212" height="674" rx="18" fill="#f3f7ff" stroke="#cddcf2" stroke-width="1.5" />
+  <text x="64" y="181" class="heading">存储节点</text>
+  <text x="207" y="181" class="body muted">CPU / 主机 DRAM / NVMe SSD / RNIC</text>
+  <rect x="1004" y="157" width="224" height="35" rx="8" fill="#e6effd" />
+  <text x="1116" y="181" text-anchor="middle" class="small blue">全量索引驻留主机 DRAM</text>
+  <rect x="1300" y="136" width="580" height="674" rx="18" fill="#f0f8f4" stroke="#c4dfd5" stroke-width="1.5" />
+  <text x="1324" y="181" class="heading">推理节点</text>
+  <text x="1470" y="181" class="body muted">推理调度器 / RNIC / GPU</text>
+
+  <g xmlns="http://www.w3.org/2000/svg" id="query-transport"><rect x="1324" y="218" width="532" height="184" rx="12" fill="#fff" stroke="#b9d9ce" stroke-width="1.5" /><rect x="1344" y="237" width="34" height="30" rx="7" fill="#d5eee2" /><text x="1361" y="258" text-anchor="middle" class="small teal" font-weight="700">01</text><text x="1390" y="260" class="label">推理 CPU / 调度器</text><text x="1540" y="291" class="small">预取：KV 标识 / 排队时间 Q</text><text x="1540" y="343" class="small">写回：KV 标识 / 推理元数据</text><text x="1346" y="378" class="small teal">排队预测变化时更新；请求取消时通知</text><path d="M1828 272 V312 H1518" class="control" /><rect x="1344" y="282" width="172" height="68" rx="9" fill="#eef7f2" stroke="#b9d9ce" /><text x="1430" y="309" text-anchor="middle" class="body" font-weight="650">推理侧 RNIC</text><text x="1430" y="335" text-anchor="middle" class="tiny">控制消息发送</text><path d="M1343 312 H1296" class="control" /><text x="1276" y="252" text-anchor="middle" class="small">交换</text><text x="1276" y="274" text-anchor="middle" class="small">网络</text><rect x="1258" y="288" width="36" height="48" rx="7" fill="#eef2f6" stroke="#9aacbc" /><rect x="1264" y="298" width="7" height="7" rx="1" fill="#7b8fa1" /><rect x="1281" y="298" width="7" height="7" rx="1" fill="#7b8fa1" /><rect x="1264" y="318" width="7" height="7" rx="1" fill="#7b8fa1" /><rect x="1281" y="318" width="7" height="7" rx="1" fill="#7b8fa1" /><path d="M1257 312 H680" class="control" /><rect x="398" y="270" width="280" height="66" rx="9" fill="#fff" stroke="#bfd0eb" /><text x="538" y="297" text-anchor="middle" class="body" font-weight="650">存储侧 RNIC</text><text x="538" y="323" text-anchor="middle" class="small">接收控制消息，交给 CPU</text><path d="M397 312 H220 V347" class="control" /><text x="735" y="244" text-anchor="middle" class="label">控制请求：KV 查找 / 预取 + 排队时间 Q；写回 + 元数据</text><text x="954" y="337" text-anchor="middle" class="small">控制消息与读写数据共用两端 RNIC</text></g>
+  <rect x="64" y="350" width="310" height="236" rx="12" fill="#fff" stroke="#bfd0eb" />
+  <rect x="82" y="368" width="34" height="30" rx="7" fill="#dce9ff" />
+  <text x="99" y="389" text-anchor="middle" class="small blue" font-weight="700">02</text>
+  <text x="128" y="391" class="label">CPU 查 DRAM 索引</text>
+  <rect x="82" y="416" width="274" height="76" rx="8" fill="#eef3fb" />
+  <text x="98" y="445" class="body" font-weight="600">KV 标识 → 存储位置</text>
+  <text x="98" y="473" class="small">SSD 编号 / 偏移 / 长度 / 状态</text>
+  <text x="84" y="528" class="body">在主机 DRAM 中查找 KV</text>
+  <text x="84" y="563" class="small">命中后进入分块预取</text>
+  <path d="M375 460 H397" class="control" />
+
+  <rect x="398" y="350" width="318" height="236" rx="12" fill="#fff" stroke="#bfd0eb" />
+  <rect x="416" y="368" width="34" height="30" rx="7" fill="#dce9ff" />
+  <text x="433" y="389" text-anchor="middle" class="small blue" font-weight="700">03</text>
+  <text x="462" y="391" class="label">CPU 拆分预取任务</text>
+  <text x="418" y="430" class="body">将命中的读取区间按对齐粒度切分</text>
+  <text x="420" y="477" class="body" font-weight="650">A</text>
+  <rect x="450" y="453" width="68" height="35" rx="6" fill="#e8effd" stroke="#bfd0eb" />
+  <rect x="530" y="453" width="68" height="35" rx="6" fill="#e8effd" stroke="#bfd0eb" />
+  <rect x="610" y="453" width="68" height="35" rx="6" fill="#e8effd" stroke="#bfd0eb" />
+  <text x="484" y="477" text-anchor="middle" class="body blue">A1</text>
+  <text x="564" y="477" text-anchor="middle" class="body blue">A2</text>
+  <text x="644" y="477" text-anchor="middle" class="body blue">A3</text>
+  <text x="420" y="525" class="body" font-weight="650">B</text>
+  <rect x="450" y="501" width="68" height="35" rx="6" fill="#e7f4ed" stroke="#b9d9ce" />
+  <rect x="530" y="501" width="68" height="35" rx="6" fill="#e7f4ed" stroke="#b9d9ce" />
+  <rect x="610" y="501" width="68" height="35" rx="6" fill="#e7f4ed" stroke="#b9d9ce" />
+  <text x="484" y="525" text-anchor="middle" class="body teal">B1</text>
+  <text x="564" y="525" text-anchor="middle" class="body teal">B2</text>
+  <text x="644" y="525" text-anchor="middle" class="body teal">B3</text>
+  <text x="418" y="567" class="small">按 KV 对象跟踪分块进度</text>
+  <path d="M717 460 H739" class="control" />
+
+  <rect x="740" y="350" width="488" height="236" rx="12" fill="#fff" stroke="#bfd0eb" />
+  <path d="M752 350 H1216 Q1228 350 1228 362 V404 H740 V362 Q740 350 752 350Z" fill="#173247" />
+  <rect x="758" y="365" width="34" height="30" rx="7" fill="#365065" />
+  <text x="775" y="386" text-anchor="middle" class="small white" font-weight="700">04</text>
+  <text x="804" y="388" class="label white">CPU 按剩余裕量选择下一小块</text>
+  <text x="760" y="437" class="body" font-weight="600">S = 剩余排队时间 − 预计剩余取回耗时</text>
+  <text x="760" y="464" class="small">S 越小越优先；每次提交前重估请求级裕量</text>
+  <rect x="760" y="480" width="448" height="40" rx="7" fill="#fff3df" stroke="#e4c89e" />
+  <text x="777" y="507" class="body" font-weight="600">请求 A：20 − 15 = 5 ms</text>
+  <text x="1190" y="507" text-anchor="end" class="body" style="fill:#925a14" font-weight="700">先提交 A1</text>
+  <rect x="760" y="530" width="448" height="36" rx="7" fill="#f2f5f8" />
+  <text x="777" y="555" class="body">请求 B：10 − 2 = 8 ms</text>
+  <text x="1190" y="555" text-anchor="end" class="small">下一轮重算</text>
+  <path d="M984 587 V620 H220 V637" class="control" />
+  <text x="603" y="610" text-anchor="middle" class="small">提交下一小块 · 限制在途数量 · 完成后更新进度</text>
+
+  <rect x="64" y="638" width="1164" height="152" rx="12" fill="#fafbfc" stroke="#dce5ec" />
+  <text x="84" y="672" class="label">05　双向分块流水：读取后发送，接收后写入</text>
+  <rect x="84" y="698" width="230" height="82" rx="10" fill="#fff" stroke="#bfd0eb" />
+  <text x="199" y="731" text-anchor="middle" class="label">NVMe SSD 池</text>
+  <text x="199" y="761" text-anchor="middle" class="small">容量层 · 异步读写</text>
+  <path d="M315 742 H368" class="data" />
+  <text x="342" y="722" text-anchor="middle" class="tiny blue">DMA</text>
+  <rect x="370" y="698" width="386" height="82" rx="10" fill="#fff9ef" stroke="#e4c89e" />
+  <text x="563" y="731" text-anchor="middle" class="label">临时 DRAM 缓冲</text>
+  <text x="563" y="761" text-anchor="middle" class="small">读写缓冲池 · 配额分配与完成回收</text>
+  <path d="M757 742 H860" class="data" />
+  <text x="809" y="722" text-anchor="middle" class="tiny blue">分块传输</text>
+  <rect x="862" y="698" width="346" height="82" rx="10" fill="#fff" stroke="#bfd0eb" />
+  <text x="1035" y="731" text-anchor="middle" class="label">存储侧 RNIC</text>
+  <text x="1035" y="761" text-anchor="middle" class="small">RDMA 发送 / 接收</text>
+
+  <path d="M1590 403 V444" class="control" />
+  <text x="1608" y="432" class="small">预留 HBM / 跟踪就绪</text>
+  <rect x="1324" y="446" width="532" height="182" rx="12" fill="#fff" stroke="#6cae9b" stroke-width="1.5" />
+  <text x="1346" y="480" class="label">GPU HBM 工作层</text>
+  <rect x="1344" y="498" width="236" height="108" rx="8" fill="#edf7f2" stroke="#b9d9ce" />
+  <text x="1361" y="529" class="label teal">预取 KV</text>
+  <text x="1361" y="558" class="small">按所需页 / 层确认完整</text>
+  <text x="1361" y="587" class="small">就绪后交给 GPU 使用</text>
+  <path d="M1581 552 H1597" class="ready" />
+  <rect x="1598" y="498" width="238" height="108" rx="8" fill="#087f72" />
+  <text x="1615" y="529" class="label white">活跃 KV / 推理</text>
+  <text x="1615" y="558" class="small" style="fill:#e0f5ed">在本地 HBM 中复用</text>
+  <text x="1615" y="587" class="small" style="fill:#e0f5ed">新 KV 成块后异步写回</text>
+  <rect x="1324" y="698" width="532" height="82" rx="10" fill="#fff" stroke="#b9d9ce" />
+  <text x="1590" y="731" text-anchor="middle" class="label">推理侧 RNIC</text>
+  <text x="1590" y="761" text-anchor="middle" class="small">GPUDirect RDMA · KV 预取与写回</text>
+  <path d="M1209 742 H1322" class="data" />
+  <text x="1266" y="722" text-anchor="middle" class="tiny blue">RDMA</text>
+  <path d="M1462 697 V630" class="data" />
+  <text x="1444" y="668" class="small blue" text-anchor="end">预取入 HBM</text>
+
+  <g xmlns="http://www.w3.org/2000/svg" id="writeback-management"><rect x="40" y="842" width="1212" height="164" rx="14" fill="#f0f8f4" stroke="#c4dfd5" /><text x="64" y="873" class="label teal">07　存储 CPU：寿命分组与放置</text><text x="1228" y="873" text-anchor="end" class="small teal">同寿命数据聚集，减少 GC 有效页搬迁</text><text x="64" y="906" class="body">按预计淘汰时间与共享性分组 → 分配缓冲与 SSD 空间 → 选择 FDP 放置类别 / ZNS 区域</text><rect x="64" y="920" width="230" height="33" rx="7" fill="#d5eee2" stroke="#a9cdbf" /><text x="179" y="943" text-anchor="middle" class="small teal" font-weight="650">短寿命独有 KV</text><rect x="318" y="920" width="230" height="33" rx="7" fill="#dce9ff" stroke="#bfd0eb" /><text x="433" y="943" text-anchor="middle" class="small blue" font-weight="650">长寿命共享 KV</text><rect x="572" y="920" width="230" height="33" rx="7" fill="#eef2f6" stroke="#c8d4de" /><text x="687" y="943" text-anchor="middle" class="small" font-weight="650">寿命待评估 KV</text><text x="834" y="943" class="small">同类中兼顾会话局部性</text><text x="64" y="984" class="body" font-weight="600">对象写入完成 → 发布可读索引 → 返回写回确认</text><rect x="1300" y="842" width="580" height="164" rx="14" fill="#f0f8f4" stroke="#c4dfd5" /><text x="1324" y="873" class="label teal">06　推理侧：新 KV + 写回元数据</text><text x="1324" y="905" class="small">会话 / 请求 ID · 前缀归属 · 共享性</text><text x="1324" y="932" class="small">历史回复间隔 → 预计下次复用时间</text><text x="1324" y="959" class="small">TTL / 保留策略 → 预计淘汰时间</text><text x="1324" y="988" class="small teal" font-weight="650">确认后，按活跃引用状态回收 HBM</text><path d="M1298 921 H1254" class="control" /><text x="1276" y="904" text-anchor="middle" class="tiny">元数据</text><path d="M1254 984 H1298" class="control" /><text x="1276" y="969" text-anchor="middle" class="tiny">确认</text><path d="M42 1033 H76" class="control" /><text x="88" y="1039" class="tiny">控制 / 调度</text><path d="M245 1033 H279" class="data" /><text x="291" y="1039" class="tiny">KV 预取</text><path d="M478 1033 H444" class="ready" /><text x="490" y="1039" class="tiny">KV 写回</text><rect x="652" y="1024" width="27" height="17" rx="4" fill="#fff3df" stroke="#e4c89e" /><text x="691" y="1039" class="tiny">当前优先任务</text><text x="1880" y="1039" text-anchor="end" class="tiny teal" font-weight="650">目标：预取减少等待，寿命分组减少搬迁</text><text x="40" y="1067" class="tiny">统一调度：预取关注数据使用期限，写回关注显存回收期限；按小块更新优先级与在途配额，实现读写流水重叠。</text></g><g xmlns="http://www.w3.org/2000/svg" id="writeback-data"><path d="M1770 630 V696" class="ready" /><text x="1753" y="668" text-anchor="end" class="small teal">新 KV 写回</text><path d="M1322 766 H1209" class="ready" /><path d="M860 766 H757" class="ready" /><path d="M368 766 H315" class="ready" /></g></svg>

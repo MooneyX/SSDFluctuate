@@ -1,0 +1,4 @@
+# torch comes from the sglang environment (CUDA 12.x build).
+kvikio-cu12>=25.2
+numpy>=1.26
+matplotlib>=3.8

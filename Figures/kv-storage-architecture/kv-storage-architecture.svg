@@ -1,0 +1,115 @@
+<svg id="architecture" xmlns="http://www.w3.org/2000/svg" width="1500" height="744" viewBox="0 0 1500 744" data-mode="both" role="img" aria-labelledby="diagram-title diagram-description">
+        <title id="diagram-title">方式 B：多 SSD 经 DPU 或 CPU + RNIC 提供 KV 存储服务，直达 GPU HBM</title>
+        <desc id="diagram-description">左侧存储节点包含四块示意 SSD，通过 PCIe 互连接入 KV 存储服务。服务可采用 DPU 或 CPU + RNIC 实现，统一承担 NVMe I/O 调度、KV 管理和 RDMA 传输。DPU 方案由处理器与集成网络引擎协同；CPU 方案由主机处理器、DRAM 与 RNIC 协同。可使用本地 DRAM 缓存 KV。中间是 RDMA 网络。右侧推理节点的 RDMA 网卡通过 PCIe P2P DMA 将 KV 直接搬入 GPU HBM。主机 CPU 与推理运行时负责初始化、内存注册和传输控制。优化目标是抑制抖动、降低端到端延迟、提高有效带宽。</desc>
+        <defs>
+          <marker id="arrow-forward" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9 Z" fill="#2563eb"/></marker>
+          <marker id="arrow-backward" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9 Z" fill="#087f78"/></marker>
+          <marker id="arrow-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9 Z" fill="#93a3b8"/></marker>
+          <style>
+            svg { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; }
+            text { fill: #17283f; }
+            .small { font-size: 13px; fill: #63758d; }
+            .tiny { font-size: 11px; fill: #63758d; }
+            .label { font-size: 15px; font-weight: 650; }
+            .panel-title { font-size: 22px; font-weight: 700; }
+            .data-link { fill: none; stroke: #2563eb; stroke-width: 3; stroke-linejoin: round; marker-end: url(#arrow-forward); marker-start: url(#arrow-forward); }
+            .optional { fill: none; stroke: #93a3b8; stroke-width: 1.7; stroke-dasharray: 5 5; }
+            .buffer-link { marker-start: url(#arrow-neutral); marker-end: url(#arrow-neutral); }
+            .chip-pin { stroke: #b9c9dd; stroke-width: 3; }
+            .read-pill, .write-pill { opacity: 1; }
+            svg[data-mode="read"] .data-link { marker-start: none; }
+            svg[data-mode="write"] .data-link { stroke: #087f78; marker-end: none; marker-start: url(#arrow-backward); }
+            svg[data-mode="read"] .write-pill, svg[data-mode="write"] .read-pill { opacity: .28; }
+            svg[data-mode="write"] .direction-text { fill: #087f78; }
+          </style>
+        </defs>
+        <rect width="1500" height="744" fill="#ffffff"/>
+        <text x="30" y="38" font-size="14" font-weight="700" fill="#2563eb">方式 B / 低抖动 KV 存储架构</text>
+        <text x="1470" y="38" text-anchor="end" class="small">逻辑结构示意 · 一个存储节点 + 一个推理节点</text>
+        <rect x="24" y="70" width="650" height="538" rx="18" fill="#f5f9ff" stroke="#cfddf1"/>
+        <rect x="878" y="70" width="598" height="538" rx="18" fill="#f3fbf8" stroke="#cde5db"/>
+        <rect x="46" y="93" width="32" height="32" rx="9" fill="#e0ebff"/>
+        <text x="62" y="115" text-anchor="middle" font-size="16" font-weight="700" fill="#2563eb">S</text>
+        <text x="92" y="118" class="panel-title">存储节点</text>
+        <text x="47" y="149" class="small">SSD 保存 KV 块；存储服务统一调度 NVMe I/O 与 RDMA 传输</text>
+        <rect x="900" y="93" width="32" height="32" rx="9" fill="#d8f1e7"/>
+        <text x="916" y="115" text-anchor="middle" font-size="16" font-weight="700" fill="#087f78">I</text>
+        <text x="946" y="118" class="panel-title">推理节点</text>
+        <text x="901" y="149" class="small">RDMA 网卡搬运 KV；GPU 从本地 HBM 读取并计算</text>
+        <text x="50" y="181" class="tiny">SSD 池（数量可扩展）</text>
+        <g>
+          <rect x="48" y="191" width="156" height="66" rx="10" fill="#ffffff" stroke="#c1d2eb"/>
+          <rect x="60" y="205" width="5" height="38" rx="2" fill="#93b9f4"/>
+          <text x="82" y="217" class="label">SSD 0</text><text x="82" y="240" class="small">NVMe · KV 块</text>
+          <rect x="48" y="279" width="156" height="66" rx="10" fill="#ffffff" stroke="#c1d2eb"/>
+          <rect x="60" y="293" width="5" height="38" rx="2" fill="#93b9f4"/>
+          <text x="82" y="305" class="label">SSD 1</text><text x="82" y="328" class="small">NVMe · KV 块</text>
+          <rect x="48" y="367" width="156" height="66" rx="10" fill="#ffffff" stroke="#c1d2eb"/>
+          <rect x="60" y="381" width="5" height="38" rx="2" fill="#93b9f4"/>
+          <text x="82" y="393" class="label">SSD 2</text><text x="82" y="416" class="small">NVMe · KV 块</text>
+          <rect x="48" y="455" width="156" height="66" rx="10" fill="#ffffff" stroke="#c1d2eb"/>
+          <rect x="60" y="469" width="5" height="38" rx="2" fill="#93b9f4"/>
+          <text x="82" y="481" class="label">SSD N</text><text x="82" y="504" class="small">NVMe · KV 块</text>
+        </g>
+        <rect x="240" y="191" width="110" height="330" rx="12" fill="#e9f0fc" stroke="#b9cce7"/>
+        <text x="295" y="327" text-anchor="middle" font-size="17" font-weight="700">PCIe</text>
+        <text x="295" y="353" text-anchor="middle" class="label">互连</text>
+        <text x="295" y="385" text-anchor="middle" class="small">NVMe I/O</text>
+        <text x="295" y="410" text-anchor="middle" class="tiny">直连 / 交换</text>
+        <path class="data-link" d="M 206 224 H 237"/>
+        <path class="data-link" d="M 206 312 H 237"/>
+        <path class="data-link" d="M 206 400 H 237"/>
+        <path class="data-link" d="M 206 488 H 237"/>
+        <path class="data-link" d="M 352 365 H 401"/>
+        <text x="377" y="348" text-anchor="middle" class="tiny">DMA</text>
+        <rect x="404" y="283" width="242" height="164" rx="14" fill="#173b72"/>
+        <text x="525" y="316" text-anchor="middle" font-size="22" font-weight="700" style="fill:#ffffff">KV 存储服务</text>
+        <rect x="416" y="332" width="218" height="30" rx="7" fill="#31578d"/>
+        <text x="525" y="353" text-anchor="middle" font-size="17" font-weight="600" style="fill:#ffffff">DPU / (CPU + RNIC)</text>
+        <text x="525" y="390" text-anchor="middle" font-size="14" style="fill:#e0ecff">KV 管理 / NVMe 队列调度</text>
+        <text x="525" y="417" text-anchor="middle" font-size="14" style="fill:#e0ecff">存储侧 RDMA 收发</text>
+        <text x="525" y="254" text-anchor="middle" class="small">两种可替换实现 · 统一服务职责</text>
+        <path class="optional buffer-link" d="M 525 451 V 484"/>
+        <rect x="414" y="488" width="222" height="76" rx="11" fill="#ffffff" stroke="#aebed0" stroke-dasharray="5 4"/>
+        <text x="525" y="517" text-anchor="middle" class="label">KV 缓存（可选）</text>
+        <text x="525" y="541" text-anchor="middle" class="small">DPU DRAM / 主机 DRAM</text>
+        <path class="data-link" d="M 649 365 H 702"/>
+        <rect x="706" y="301" width="144" height="128" rx="14" fill="#f6f7fb" stroke="#d5dce8"/>
+        <text x="778" y="337" text-anchor="middle" font-size="20" font-weight="700">RDMA</text>
+        <text x="778" y="365" text-anchor="middle" class="label">网络 / 交换机</text>
+        <text x="778" y="395" text-anchor="middle" class="small">RoCE 或 IB</text>
+        <path class="data-link" d="M 853 365 H 904"/>
+        <rect x="908" y="295" width="172" height="140" rx="13" fill="#ffffff" stroke="#89baa9" stroke-width="1.5"/>
+        <text x="994" y="329" text-anchor="middle" class="label">推理侧 RDMA 网卡</text>
+        <text x="994" y="362" text-anchor="middle" font-size="25" font-weight="700" fill="#087f78">RNIC</text>
+        <text x="994" y="392" text-anchor="middle" class="small">KV 收发 / DMA</text>
+        <rect x="1188" y="236" width="258" height="270" rx="16" fill="#e4f3ec" stroke="#8bbba7" stroke-width="1.5"/>
+        <text x="1210" y="266" font-size="18" font-weight="700" fill="#087f78">GPU</text>
+        <rect x="1210" y="282" width="214" height="35" rx="7" fill="#ffffff" stroke="#bbd9cc"/>
+        <text x="1317" y="305" text-anchor="middle" class="small">计算单元（SM）</text>
+        <path d="M 1317 332 V 319" fill="none" stroke="#93a3b8" stroke-width="1.7" marker-end="url(#arrow-neutral)"/>
+        <rect x="1210" y="332" width="214" height="94" rx="10" fill="#087f78"/>
+        <text x="1317" y="368" text-anchor="middle" font-size="28" font-weight="700" style="fill:#ffffff">HBM</text>
+        <text x="1317" y="396" text-anchor="middle" font-size="14" style="fill:#dff8f0">GPU 显存 · 活跃 KV</text>
+        <text x="1317" y="454" text-anchor="middle" class="small">数据先进入 HBM</text>
+        <text x="1317" y="478" text-anchor="middle" class="small">计算就绪后再消费</text>
+        <path class="data-link" d="M 1083 365 H 1206"/>
+        <text x="1136" y="329" text-anchor="middle" class="tiny">PCIe P2P DMA</text>
+        <text x="1136" y="348" text-anchor="middle" font-size="11" fill="#087f78">GPUDirect RDMA</text>
+        <text x="1136" y="391" text-anchor="middle" class="tiny">直达 HBM</text>
+        <path class="optional" d="M 994 438 V 488"/>
+        <text x="1008" y="466" class="tiny">控制面</text>
+        <rect x="908" y="490" width="220" height="74" rx="11" fill="#ffffff" stroke="#aebed0" stroke-dasharray="5 4"/>
+        <text x="1018" y="517" text-anchor="middle" class="label">主机 CPU / 推理运行时</text>
+        <text x="1018" y="540" text-anchor="middle" class="small">初始化、内存注册、传输控制</text>
+        <path class="optional" d="M 1131 527 H 1317 V 509"/>
+        <text x="901" y="587" class="small">网卡通过 PCIe P2P DMA 直接读写 GPU HBM。</text>
+        <rect x="24" y="630" width="1452" height="90" rx="12" fill="#f8fafc" stroke="#e1e7ef"/>
+        <g class="read-pill"><rect x="43" y="648" width="57" height="23" rx="6" fill="#e3edff"/><text x="71" y="664" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">读取</text><text x="114" y="665" font-size="13">SSD → KV 存储服务 → RDMA 网络 → 推理网卡 → HBM</text></g>
+        <g class="write-pill"><rect x="745" y="648" width="57" height="23" rx="6" fill="#dbf2e9"/><text x="773" y="664" text-anchor="middle" font-size="12" font-weight="700" fill="#087f78">回写</text><text x="816" y="665" font-size="13">HBM → 推理网卡 → RDMA 网络 → KV 存储服务 → SSD</text></g>
+        <path d="M 46 695 H 78" stroke="#2563eb" stroke-width="3"/>
+        <text x="90" y="700" class="small">实线：KV 主数据面</text>
+        <path d="M 293 695 H 325" class="optional"/>
+        <text x="337" y="700" class="small">虚线：控制面或可选缓存</text>
+        <text x="1455" y="700" text-anchor="end" font-size="13" font-weight="600" style="fill:#087f78">优化目标：抑制抖动 · 降低延迟 · 提高有效带宽</text>
+      </svg>
